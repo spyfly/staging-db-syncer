@@ -1,0 +1,30 @@
+{
+  "name": "staging-db-syncer",
+  "version": "1.0.0",
+  "description": "A tool to sync production database replica to staging with web UI",
+  "main": "server.js",
+  "author": "spyfly",
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "winston": "^3.11.0",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": ["database", "sync", "staging", "docker", "mariadb", "mysql"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/spyfly/staging-db-syncer.git"
+  },
+  "homepage": "https://github.com/spyfly/staging-db-syncer#readme",
+  "bugs": {
+    "url": "https://github.com/spyfly/staging-db-syncer/issues"
+  }
+}

@@ -1,0 +1,52 @@
+services:
+  # Production DB Replica (Read-only)
+  prod_db_replica:
+    image: mariadb
+    container_name: prod-db-replica
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - prod_data:/var/lib/mysql
+      - backup_storage:/mnt/backup
+    command: --read-only=1
+
+  # Development/Staging DB
+  dev_db:
+    image: mariadb
+    container_name: staging-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - dev_data:/var/lib/mysql
+      - backup_storage:/mnt/backup
+    ports:
+      - "3306:3306"
+
+  # Web UI Application
+  staging-db-syncer:
+    build: .
+    container_name: staging-db-syncer
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./logs:/app/logs
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/app/scripts
+      - dev_data:/staging_db_data
+      - ./post-restore:/app/post-restore
+    environment:
+      - PROD_DB_CONTAINER=${PROD_DB_CONTAINER}
+      - DEV_DB_CONTAINER=${DEV_DB_CONTAINER}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - EXCLUDED_DATABASES=${EXCLUDED_DATABASES:-phpmyadmin}
+      - POST_RESTORE_SQL_DIR=${POST_RESTORE_SQL_DIR:-/app/post-restore}
+      - CRON_ENABLED=${CRON_ENABLED:-true}
+      - CRON_SCHEDULE=${CRON_SCHEDULE:-0 2 * * *}
+    depends_on:
+      - prod_db_replica
+      - dev_db
+
+volumes:
+  prod_data:
+  dev_data:
+  backup_storage:
