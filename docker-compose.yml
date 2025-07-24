@@ -31,9 +31,8 @@ services:
     volumes:
       - ./logs:/app/logs
       - /var/run/docker.sock:/var/run/docker.sock
-      - .:/app/scripts
-      - dev_data:/staging_db_data
       - ./post-restore:/app/post-restore
+      - ./compose.yml:/app/compose.yml:ro
     environment:
       - PROD_DB_CONTAINER=${PROD_DB_CONTAINER}
       - DEV_DB_CONTAINER=${DEV_DB_CONTAINER}

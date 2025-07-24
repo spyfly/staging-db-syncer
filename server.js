@@ -104,28 +104,22 @@ async function syncDatabase() {
 
     try {
         // Clean backup directory
-        await executeCommand(`docker exec -t ${PROD_DB_CONTAINER} bash -c "cd /mnt/backup && rm -rf *"`, 'Cleaning backup directory');
+        await executeCommand(`docker compose exec -T ${PROD_DB_CONTAINER} bash -c "cd /mnt/backup && rm -rf *"`, 'Cleaning backup directory');
         
         // Create database backup
-        await executeCommand(`docker exec -t ${PROD_DB_CONTAINER} mariabackup --backup --target-dir=/mnt/backup/ --databases-exclude ${EXCLUDED_DATABASES} --user root -p${MYSQL_ROOT_PASSWORD}`, 'Creating database backup');
+        await executeCommand(`docker compose exec -T ${PROD_DB_CONTAINER} mariabackup --backup --target-dir=/mnt/backup/ --databases-exclude ${EXCLUDED_DATABASES} --user root -p${MYSQL_ROOT_PASSWORD}`, 'Creating database backup');
         
         // Prepare backup for restore
-        await executeCommand(`docker exec -t ${PROD_DB_CONTAINER} mariabackup --prepare --target-dir=/mnt/backup`, 'Preparing backup for restore');
+        await executeCommand(`docker compose exec -T ${PROD_DB_CONTAINER} mariabackup --prepare --target-dir=/mnt/backup`, 'Preparing backup for restore');
         
         // Stop staging database
-        await executeCommand(`docker stop ${DEV_DB_CONTAINER}`, 'Stopping staging database');
-        
-        // Clean staging database files via mounted volume (directly from web_ui container)
-        await executeCommand('rm -rf /staging_db_data/*', 'Cleaning staging database files');
+        await executeCommand(`docker compose down -v ${DEV_DB_CONTAINER}`, 'Stopping and removing staging database');
         
         // Restore database via mounted volume
-        await executeCommand(`docker exec -t ${DEV_DB_CONTAINER} mariabackup --move-back --target-dir=/mnt/backup`, 'Restoring database');
-        
-        // Fix permissions
-        await executeCommand(`docker exec -t ${DEV_DB_CONTAINER} chown -R mysql:mysql /var/lib/mysql`, 'Fixing database permissions');
-        
+        await executeCommand(`docker compose run -T ${DEV_DB_CONTAINER} mariabackup --move-back --target-dir=/mnt/backup`, 'Restoring database');
+                
         // Start database service
-        await executeCommand(`docker start ${DEV_DB_CONTAINER}`, 'Starting staging database');
+        await executeCommand(`docker compose up -d ${DEV_DB_CONTAINER}`, 'Starting staging database');
         
         // Wait for database to be ready
         await executeCommand('sleep 10', 'Waiting for database restart');
@@ -143,8 +137,7 @@ async function syncDatabase() {
                 if (sqlFiles.length > 0) {
                     for (const sqlFile of sqlFiles) {
                         const fileName = sqlFile.split('/').pop();
-                        await executeCommand(`docker cp ${sqlFile} ${DEV_DB_CONTAINER}:/tmp/${fileName}`, `Copying ${fileName}`);
-                        await executeCommand(`docker exec -i ${DEV_DB_CONTAINER} mariadb -u root -p${MYSQL_ROOT_PASSWORD} < /tmp/${fileName}`, `Executing ${fileName}`);
+                        await executeCommand(`docker compose exec -T ${DEV_DB_CONTAINER} mariadb -u root -p${MYSQL_ROOT_PASSWORD} < ${sqlFile}`, `Executing ${fileName}`);
                     }
                     
                     const successEntry = { 
