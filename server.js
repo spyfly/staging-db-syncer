@@ -119,7 +119,7 @@ async function syncDatabase() {
         await executeCommand(`docker compose run -T ${DEV_DB_CONTAINER} mariabackup --move-back --target-dir=/mnt/backup`, 'Restoring database');
                 
         // Start database service
-        await executeCommand(`docker compose up -d ${DEV_DB_CONTAINER}`, 'Starting staging database');
+        await executeCommand(`docker compose up -d ${DEV_DB_CONTAINER} --remove-orphans`, 'Starting staging database');
         
         // Wait for database to be ready
         await executeCommand('sleep 10', 'Waiting for database restart');
