@@ -116,10 +116,10 @@ async function syncDatabase() {
         await executeCommand(`docker compose down -v ${DEV_DB_CONTAINER}`, 'Stopping and removing staging database');
         
         // Restore database via mounted volume
-        await executeCommand(`docker compose run -T ${DEV_DB_CONTAINER} --remove-orphans mariadb-backup --move-back --target-dir=/mnt/backup`, 'Restoring database');
+        await executeCommand(`docker compose run -T --remove-orphans ${DEV_DB_CONTAINER} mariadb-backup --move-back --target-dir=/mnt/backup`, 'Restoring database');
                 
         // Start database service
-        await executeCommand(`docker compose up -d ${DEV_DB_CONTAINER} --remove-orphans`, 'Starting staging database');
+        await executeCommand(`docker compose up -d --remove-orphans ${DEV_DB_CONTAINER}`, 'Starting staging database');
         
         // Wait for database to be ready
         await executeCommand('sleep 10', 'Waiting for database restart');
