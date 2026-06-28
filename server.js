@@ -115,8 +115,13 @@ async function syncDatabase() {
         // Stop staging database
         await executeCommand(`docker compose down -v ${DEV_DB_CONTAINER}`, 'Stopping and removing staging database');
         
-        // Restore database via mounted volume
-        await executeCommand(`docker compose run -T --remove-orphans ${DEV_DB_CONTAINER} mariadb-backup --move-back --target-dir=/mnt/backup`, 'Restoring database');
+        // Restore database via mounted volume.
+        // --force-non-empty-directories: the mariadb image entrypoint auto-runs
+        // `mariadb-install-db` on first start when /var/lib/mysql is empty,
+        // populating the volume before our command runs. Without this flag,
+        // move-back refuses to overwrite. See:
+        // https://mariadb.com/kb/en/mariadb-backup-options/#-force-non-empty-directories
+        await executeCommand(`docker compose run -T --remove-orphans ${DEV_DB_CONTAINER} mariadb-backup --move-back --force-non-empty-directories --target-dir=/mnt/backup`, 'Restoring database');
                 
         // Start database service
         await executeCommand(`docker compose up -d --remove-orphans ${DEV_DB_CONTAINER}`, 'Starting staging database');
